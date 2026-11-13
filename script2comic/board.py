@@ -248,9 +248,9 @@ def ref_images(names: list[str], anchor: Path | None) -> tuple[list[str], str]:
         which = f"image {idx[0]}" if len(idx) == 1 else f"images {idx[0]}-{idx[-1]}"
         if spec.get("place"):
             lines.append(f"{which} = {spec['desc']}. This is a PLACE, not a person: redraw the same architecture and "
-                         f"layout in the ink style, as a drawing, never as a photo.")
+                         f"layout in the same style as the frame.")
             continue
-        lines.append(f"{which} = {spec['desc']}. Draw this exact person ONCE, in ink: same face "
+        lines.append(f"{which} = {spec['desc']}. Draw this exact person ONCE: same face "
                      f"shape, hairstyle and features, recognizable from the photo.")
     if anchor is not None:
         urls.append(upload(anchor))

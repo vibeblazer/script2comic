@@ -339,7 +339,8 @@ def parse_fountain(path):
                                      text=narration_text(text), exprs=[], ext="",
                                      scene=scene_no, line=i - len(para) + 1,
                                      skip=bool(SKIP_RE.search(raw_para)),
-                                     say=(m.group(1).strip() if (m := SAY_RE.search(raw_para)) else None)))
+                                     say=(m.group(1).strip() if (m := SAY_RE.search(raw_para)) else None),
+                                     hold=(float(h.group(1)) if (h := HOLD_RE.search(raw_para)) else None)))
     return title, elements
 
 
@@ -616,7 +617,7 @@ def build_chunks(elements, cast, narrator_engine, title):
     for el in elements:
         c = dict(kind=el["kind"], speaker=el["speaker"], scene=el["scene"],
                  line=el.get("line"), heading=el.get("heading"),
-                 skip=el.get("skip", False), say=el.get("say"))
+                 skip=el.get("skip", False), say=el.get("say"), hold=el.get("hold"))
         if el["kind"] == "dialogue":
             c["text"] = dialogue_text(el)
             c["plain"] = el["text"]
@@ -685,6 +686,7 @@ def set_key(c):
 # ---------------------------------------------------------------------------
 SKIP_RE = re.compile(r"\[\[\s*skip\s*\]\]", re.I)
 SAY_RE = re.compile(r"\[\[\s*say\s*:(.*?)\]\]", re.I)
+HOLD_RE = re.compile(r"\[\[\s*hold\s*:\s*([0-9.]+)\s*\]\]", re.I)
 HEADING_TIMES = {"MORNING", "AFTERNOON", "EVENING", "NIGHT", "DAY", "LATE NIGHT", "DUSK", "DAWN",
                  "CONTINUOUS", "SAME", "MOMENTS LATER", "DAYS PASSING"}
 HEADING_MODES = ("FLASHBACK", "MEMORY", "NIGHTMARE", "MONTAGE", "EPILOGUE")
@@ -759,6 +761,11 @@ def listener_chunks(chunks):
     out = []
     for c in chunks:
         if c["kind"] == "action" and (c.get("skip") or c.get("say") == ""):
+            continue
+        if c["kind"] == "action" and c.get("hold"):
+            secs = round(float(c["hold"]), 2)
+            CACHE_DIR.mkdir(parents=True, exist_ok=True)
+            out.append(dict(c, plain=c["text"], path=make_silence(secs, CACHE_DIR / f"_hold_{secs}.mp3")))
             continue
         if c["kind"] == "action" and c.get("say"):
             d = dict(c, text=narration_text(clean_text(c["say"])))
